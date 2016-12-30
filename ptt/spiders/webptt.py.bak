@@ -1,0 +1,76 @@
+# -*- coding: utf-8 -*-
+import scrapy
+import re
+
+from scrapy.spiders import CrawlSpider, Rule
+from scrapy.linkextractors import LinkExtractor
+
+
+# class WebpttSpider(scrapy.Spider):
+class WebpttSpider(CrawlSpider):
+    name = "webptt"
+    allowed_domains = ["www.ptt.cc"]
+    ptt_url = 'https://www.ptt.cc'
+    start_urls = ['https://www.ptt.cc/bbs/Gossiping/index.html']
+    MAX_PAGE = 3
+    _page = 1
+
+    rules = (
+        # Rule(LinkExtractor(allow=('/bbs/Gossiping/index\.html')), follow=True, process_request='add_cookie'),
+        # Rule(LinkExtractor(allow=('M\.\d+')), callback='parse_article', follow=True, process_request='add_cookie'),
+        Rule(LinkExtractor(allow=('M\.\d+')), callback='parse_article', process_request='add_cookie'),
+    )
+
+    def make_requests_from_url(self, url):
+        """
+            Add cookie to request
+        """
+        request = scrapy.Request(url=url)
+        request.cookies['over18'] = 1
+        # request.headers['User-Agent'] = (
+        #     'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, '
+        #     'like Gecko) Chrome/45.0.2454.85 Safari/537.36')
+        return request
+
+    def add_cookie(self, request):
+        request.cookies['over18'] = 1
+        # request.headers['User-Agent'] = (
+        #     'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, '
+        #     'like Gecko) Chrome/45.0.2454.85 Safari/537.36')
+        return request
+
+    def start_requests(self):
+        for i, url in enumerate(self.start_urls):
+            yield self.make_requests_from_url(url)
+            # if url.find('index') >= 0 :
+            #     yield self.make_requests_from_url(url)
+
+    def parse(self, response):
+        print("========Parse List url: {}".format(response.url))
+        # Get topic string
+        topic = response.url.split('/')[-2]
+        print("Topic: {}".format(topic))
+
+        if topic is not None:
+            page = re.search(r'href="/bbs/' + topic + '/index(\d+).html">&lsaquo;', response.text)
+            last_page = 1;
+            if page is not None:
+                last_page = int(page.group(1))
+
+            print("Last page: %d" % (last_page))
+
+        # for div in response.css('div.r-ent'):
+        #     try:
+        #         # print(div.extract())
+        #         # ex. link would be <a href="/bbs/PublicServan/M.1127742013.A.240.html">Re: [問題] 職等</a>
+        #         href = div.css('a::attr(href)').extract_first()
+        #         print(href)
+        #         url = self.ptt_url + href
+        #         yield self.request(url, self.parse_article)
+        #     except:
+        #         pass
+        []
+
+    def parse_article(self, response):
+        print("Parse Article***")
+        pass
